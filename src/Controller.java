@@ -7,6 +7,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.shape.Rectangle;
 
 import java.net.URL;
+import java.util.Random;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
@@ -18,8 +19,9 @@ public class Controller implements Initializable {
   private Rectangle bird;
 
   double yDelta = 0.02;
-  double time = 0;
+  double time  = 0;
   int jumpHeight = 100;
+  Random random = new Random();
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -80,4 +82,20 @@ public class Controller implements Initializable {
     bird.setY(0);
     time = 0;
   }
+
+  private void createObstacles() {
+    int width = 25;
+    double xPos = plane.getWidth() - 100;
+    double space = 150;
+    double recTopHeight = random.nextInt((int) (plane.getHeight() - space - 100) + 50);
+    System.out.println(recTopHeight);
+    double recBottomHeight = plane.getHeight() - space - recTopHeight;
+
+
+    Rectangle rectangleTop = new Rectangle(xPos, 0, width, recTopHeight);
+    Rectangle rectangleBottom = new Rectangle(xPos, recTopHeight + space, width, recBottomHeight);
+
+    plane.getChildren().addAll(rectangleTop, rectangleBottom);
+  }
+
 }
