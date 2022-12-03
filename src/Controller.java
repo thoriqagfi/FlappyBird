@@ -5,27 +5,38 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 
 import java.net.URL;
-import java.util.Random;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
-  AnimationTimer gameLoop;
 
+  AnimationTimer gameLoop;
   @FXML
   private AnchorPane plane;
   @FXML
   private Rectangle bird;
+  @FXML
+  private Text score;
 
-  double yDelta = 0.02;
-  double time  = 0;
-  int jumpHeight = 100;
-  Random random = new Random();
+  private double accelerationTime = 0;
+  private int gameTime = 0;
+  private int scoreCounter = 0;
+
+  private Bird birdComponent;
+  private ObstaclesHandler obstaclesHandler;
+
+  ArrayList<Rectangle> obstacles = new ArrayList<>();
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
-    load();
+    int jumpHeight = 75;
+    birdComponent = new Bird(bird, jumpHeight);
+    double planeHeight = 600;
+    double planeWidth = 400;
+    obstaclesHandler = new ObstaclesHandler(plane, planeHeight, planeWidth);
 
     gameLoop = new AnimationTimer() {
       @Override
@@ -33,69 +44,64 @@ public class Controller implements Initializable {
         update();
       }
     };
+
+    load();
+    
     gameLoop.start();
   }
 
   @FXML
   void pressed(KeyEvent event) {
     if (event.getCode() == KeyCode.SPACE) {
-      fly();
+      birdComponent.fly();
+      accelerationTime = 0;
     }
-  }
-
-  private void fly() {
-    if(bird.getLayoutY() + bird.getY() <= jumpHeight) {
-      moveBirdY(-(bird.getLayoutY() + bird.getY()));
-      time = 0;
-      return;
-    }
-
-    moveBirdY(-jumpHeight);
-    time = 0;
   }
 
   // Called every game frame
   private void update() {
-    time++;
-    moveBirdY(yDelta * time);
+    gameTime++;
+    accelerationTime++;
+    double yDelta = 0.02;
+    birdComponent.moveBirdY(yDelta * accelerationTime);
 
-    if(isBirdDead()) {
-      resetBird();
+    if(pointChecker(obstacles, bird)) {
+      scoreCounter++;
+      score.setText(String.valueOf(scoreCounter));
+    }
+
+    obstaclesHandler.moveObstacles(obstacles);
+    if(gameTime % 500 == 0) {
+      obstacles.addAll(obstaclesHandler.createObstacles());
+    }
+
+    if(birdComponent.isBirdDead(obstacles, plane)) {
+      resetGame();
     }
   }
 
   // Everything called once, at the game start
   private void load() {
-    System.out.println("Game Starting");
+    obstacles.addAll(obstaclesHandler.createObstacles());
   }
 
-  private void moveBirdY(double positionChange) {
-    bird.setY(bird.getY() + positionChange);
-  }
-
-  private boolean isBirdDead() {
-    double birdY = bird.getLayoutY() + bird.getY();
-    return birdY >= plane.getHeight();
-  }
-
-  private void resetBird(){
+  private void resetGame() {
     bird.setY(0);
-    time = 0;
+    plane.getChildren().removeAll(obstacles);
+    obstacles.clear();
+    gameTime = 0;
+    accelerationTime = 0;
+    scoreCounter = 0;
+    score.setText(String.valueOf(scoreCounter));
   }
 
-  private void createObstacles() {
-    int width = 25;
-    double xPos = plane.getWidth() - 100;
-    double space = 150;
-    double recTopHeight = random.nextInt((int) (plane.getHeight() - space - 100) + 50);
-    System.out.println(recTopHeight);
-    double recBottomHeight = plane.getHeight() - space - recTopHeight;
-
-
-    Rectangle rectangleTop = new Rectangle(xPos, 0, width, recTopHeight);
-    Rectangle rectangleBottom = new Rectangle(xPos, recTopHeight + space, width, recBottomHeight);
-
-    plane.getChildren().addAll(rectangleTop, rectangleBottom);
+  private boolean pointChecker(ArrayList<Rectangle> obstacles, Rectangle bird) {
+    for(Rectangle obstacle : obstacles) {
+      int birdPositionX = (int) (bird.getLayoutX() + bird.getX());
+      if((int)(obstacle.getLayoutX() + obstacle.getX()) == birdPositionX) {
+        return true;
+      }
+    }
+    return false;
   }
-
 }
